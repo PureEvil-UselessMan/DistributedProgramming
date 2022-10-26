@@ -21,68 +21,72 @@ public class Client {
     static Socket socket = null;
     static DataOutputStream out;
     static DataInputStream in;
-    static Turn turn;
+
+    // game variables
     static Turn me;
+    static Turn turn;
     static int count;
     static String info;
-
-/*     static String[][] table = new String[10][10];
-    static boolean first_step = false;
-    static boolean first_player = false;
-    static int turn;*/
+    static String move;
+    static MyJButton Buttons[][] = new MyJButton[10][10];
+    static boolean Enabled[][] = new boolean[10][10];
 
     public static void main(String[] args) throws Exception {
         socket = new Socket(host, port);
         out = new DataOutputStream(socket.getOutputStream());
         in = new DataInputStream(socket.getInputStream());
-        me = whoIAm(in.readUTF());
-        whosTurn(in.readUTF());
-        print(turn.toString());
+        me = whosTurn(in.readUTF());
+        print("I am " + me.toString());
 
         final JFrame frame = new JFrame();
-        frame.setTitle((turn == Turn.BLUE) ? "You play for Blue ":"You play for Red ");
+        frame.setTitle((me == Turn.BLUE) ? "You play for Blue ":"You play for Red");
         Container container = frame.getContentPane();
         container.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
         JPanel panel = new JPanel();
         panel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         panel.setLayout(new GridLayout(10, 10, 1, 1));
-        if (me == turn) {
-            count = 3;
-            info = "";
-        }
         for (int i = 0; i < 100; i++) {
             MyJButton btn = new MyJButton("");
-            btn.setCoord(i%10, i);
+            btn.setEnabled(false);
+            Buttons[i/10][i%10] = btn;
+            btn.setCoord(i/10, i%10);
             btn.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    if (turn == Turn.BLUE) {
+                    if (me == turn) {
                         if (count != 0) {
-                            btn.setBackground(Color.BLUE);
                             count--;
                             info += btn.getx() + btn.gety();
-                        }
-                        if (count == 0) {
-                            try {
-                                out.writeUTF(info);
-                            } catch (IOException e1) {
-                                // TODO Auto-generated catch block
-                                e1.printStackTrace();
+                            if (me == Turn.BLUE) {
+                                btn.setBackground(Color.BLUE);
+                            } else if (me == Turn.RED) {
+                                btn.setBackground(Color.RED);
                             }
-                        }
-                    } else if (turn == Turn.RED) {
-                        if (count != 0) {
-                            btn.setBackground(Color.RED);
-                            count--;
-                        // int num = btn.getNum();
-                        // int first = num%10;
-                        // int second = num/10%10;
-                        // table[first][second] = btn.getText();
-
-                        // String player_and_cell = "1" + Integer.toString(num);
-                        // sendMessage(player_and_cell);
+                            SetEnabled(btn);
+                            CalcEnabledButtons();
                         }
                     }
+                }
+
+                private void SetEnabled(MyJButton btn) {
+                    int x = Integer.parseInt(btn.getx());
+                    int y = Integer.parseInt(btn.gety());
+                    if (x + 1 < 10)
+                        Enabled[x+1][y] = true;
+                    if (x + 1 < 10 && y - 1 > -1)
+                        Enabled[x+1][y-1] = true;
+                    if ( y - 1 > -1)
+                        Enabled[x][y-1] = true;
+                    if (x - 1 > -1 && y - 1 > -1)
+                        Enabled[x-1][y-1] = true;
+                    if (x - 1 > -1)
+                        Enabled[x-1][y] = true;
+                    if (x - 1 > -1 && y + 1 < 10)
+                        Enabled[x-1][y+1] = true;
+                    if (y + 1 < 10)
+                        Enabled[x][y+1] = true;
+                    if (x + 1 < 10 && y + 1 < 10)
+                        Enabled[x+1][y+1] = true;
                 }
             });
             panel.add(btn);
@@ -93,8 +97,63 @@ public class Client {
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
+
+        for (int i = 0; i < 10; i++)
+            for (int j = 0; j < 10; j++)
+                Enabled[i][j] = false;
+        if (me == Turn.BLUE) Enabled[0][9] = true;
+        if (me == Turn.RED) Enabled[9][0] = true;
+        CalcEnabledButtons();
+
+        while(!isOver()) {
+            turn = whosTurn(in.readUTF());
+            print("Now turn " + turn.toString());
+            if (me == turn) {
+                count = 3;
+                info = "";
+                while(count == 3) { print ("Wait move"); }
+                while(count == 2) { print ("Wait move"); }
+                while(count == 1) { print ("Wait move"); }
+                out.writeUTF(info);
+                print("move " + me.toString() + " " + move);
+            } else {
+                print("Wait info of move my enemy " + me.toString());
+                info = in.readUTF();
+                print("Get info of move " + info);
+                ParseMove();
+            }
+        }
     }
-    private static Turn whoIAm(String readUTF) {
+
+    private static void CalcEnabledButtons() {
+        for (int i = 0; i < 10; i++) {
+            for (int j = 0; j < 10; j++) {
+                if (Enabled[i][j]) {
+                    Buttons[i][j].setEnabled(true);
+                }
+            }
+        }
+    }
+
+    private static boolean isOver() {
+        return false;
+    }
+
+    private static void ParseMove() {
+        if (me == Turn.BLUE) {
+            print("" + Character.getNumericValue(info.charAt(0)));
+            Buttons[Character.getNumericValue(info.charAt(0))][Character.getNumericValue(info.charAt(1))].setBackground(Color.RED);
+            Buttons[Character.getNumericValue(info.charAt(2))][Character.getNumericValue(info.charAt(3))].setBackground(Color.RED);
+            Buttons[Character.getNumericValue(info.charAt(4))][Character.getNumericValue(info.charAt(5))].setBackground(Color.RED);
+        } else if (me == Turn.RED) {
+            print("" + Character.getNumericValue(info.charAt(0)));
+            Buttons[Character.getNumericValue(info.charAt(0))][Character.getNumericValue(info.charAt(1))].setBackground(Color.BLUE);
+            Buttons[Character.getNumericValue(info.charAt(2))][Character.getNumericValue(info.charAt(3))].setBackground(Color.BLUE);
+            Buttons[Character.getNumericValue(info.charAt(4))][Character.getNumericValue(info.charAt(5))].setBackground(Color.BLUE);
+        }
+    }
+
+    private static Turn whosTurn(String readUTF) {
         if (readUTF.equals("BLUE")) {
             return Turn.BLUE;
         } else if (readUTF.equals("RED")) {
@@ -103,13 +162,6 @@ public class Client {
         return null;
     }
 
-    static void whosTurn(String stringTurn) {
-        if (stringTurn.equals("BLUE")) {
-            turn = Turn.BLUE;
-        } else if (stringTurn.equals("RED")) {
-            turn = Turn.RED;
-        }
-    }
     static void print(String msg) {
         System.out.println(msg);
     }
@@ -131,17 +183,3 @@ public class Client {
         }
     }
 }
-
-
-
-
-
-        // Reconection System
-        // while (true) {
-        //     try {
-        //         socket = new Socket(host, port);
-        //     }
-        //     catch(IOException i) {
-        //         //
-        //     }
-        // }
