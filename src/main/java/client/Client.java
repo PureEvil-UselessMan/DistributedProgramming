@@ -48,6 +48,7 @@ public class Client {
         for (int i = 0; i < 100; i++) {
             MyJButton btn = new MyJButton("");
             btn.setEnabled(false);
+            btn.setForeground(Color.WHITE);
             Buttons[i/10][i%10] = btn;
             btn.setCoord(i/10, i%10);
             btn.addActionListener(new ActionListener() {
@@ -59,8 +60,10 @@ public class Client {
                             info += btn.getx() + btn.gety();
                             if (me == Turn.BLUE) {
                                 btn.setBackground(Color.BLUE);
+                                if (btn.getText().equals("")) btn.setText("Y");
                             } else if (me == Turn.RED) {
                                 btn.setBackground(Color.RED);
+                                if (btn.getText().equals("")) btn.setText("Y");
                             }
                             SetEnabled(btn);
                             CalcEnabledButtons();
@@ -111,18 +114,25 @@ public class Client {
             if (me == turn) {
                 count = 3;
                 info = "";
+                frame.setTitle("Your turn. Points left: " + count);
                 while(count == 3) { print ("Wait move"); }
+                frame.setTitle("Your turn. Points left: " + count);
                 while(count == 2) { print ("Wait move"); }
+                frame.setTitle("Your turn. Points left: " + count);
                 while(count == 1) { print ("Wait move"); }
                 out.writeUTF(info);
                 print("move " + me.toString() + " " + move);
             } else {
                 print("Wait info of move my enemy " + me.toString());
+                frame.setTitle("Enemy turn");
                 info = in.readUTF();
                 print("Get info of move " + info);
                 ParseMove();
             }
         }
+        turn = whosTurn(in.readUTF());
+        print("Winner is " + turn.toString());
+        frame.setTitle(turn.toString() + " has win!");
     }
 
     private static void CalcEnabledButtons() {
@@ -136,20 +146,28 @@ public class Client {
     }
 
     private static boolean isOver() {
-        return false;
+        try {
+            String isover = in.readUTF();
+            if (isover.equals("NO")) {
+                return false;
+            } else if (isover.equals("YES")) {
+                return true;
+            }
+            return true;
+        } catch (IOException e) {
+            return true;
+        }
     }
 
     private static void ParseMove() {
-        if (me == Turn.BLUE) {
-            print("" + Character.getNumericValue(info.charAt(0)));
-            Buttons[Character.getNumericValue(info.charAt(0))][Character.getNumericValue(info.charAt(1))].setBackground(Color.RED);
-            Buttons[Character.getNumericValue(info.charAt(2))][Character.getNumericValue(info.charAt(3))].setBackground(Color.RED);
-            Buttons[Character.getNumericValue(info.charAt(4))][Character.getNumericValue(info.charAt(5))].setBackground(Color.RED);
-        } else if (me == Turn.RED) {
-            print("" + Character.getNumericValue(info.charAt(0)));
-            Buttons[Character.getNumericValue(info.charAt(0))][Character.getNumericValue(info.charAt(1))].setBackground(Color.BLUE);
-            Buttons[Character.getNumericValue(info.charAt(2))][Character.getNumericValue(info.charAt(3))].setBackground(Color.BLUE);
-            Buttons[Character.getNumericValue(info.charAt(4))][Character.getNumericValue(info.charAt(5))].setBackground(Color.BLUE);
+        for (int i = 0; i < info.length(); i+=2) {
+            if (me == Turn.BLUE) {
+                Buttons[Character.getNumericValue(info.charAt(i))][Character.getNumericValue(info.charAt(i+1))].setBackground(Color.RED);
+                Buttons[Character.getNumericValue(info.charAt(i))][Character.getNumericValue(info.charAt(i+1))].setText("E");
+            } else if (me == Turn.RED) {
+                Buttons[Character.getNumericValue(info.charAt(i))][Character.getNumericValue(info.charAt(i+1))].setBackground(Color.BLUE);
+                Buttons[Character.getNumericValue(info.charAt(i))][Character.getNumericValue(info.charAt(i+1))].setText("E");
+            }
         }
     }
 
