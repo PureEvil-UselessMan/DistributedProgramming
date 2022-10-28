@@ -10,7 +10,7 @@ public class Server
 {
     static private int port = 8080;
     static Paint[][] Field;
-    static Turn turn; // = Turn.values()[(new Random()).nextInt(2)];
+    static Turn turn;
     static Socket playerBlue;
     static Socket playerRed;
     static DataInputStream inB;
@@ -253,61 +253,3 @@ public class Server
         }
     }
 }
-    // public static class VirusWars extends Thread {
-    //     static DataInputStream in;
-    //     static DataOutputStream out;
-    //     static Socket client;
-    //     Turn me;
-
-    //     VirusWars(Socket _client, Turn _me) {
-    //         try {
-    //             client = _client;
-    //             me = _me;
-    //             in = new DataInputStream(client.getInputStream());
-    //             out = new DataOutputStream(client.getOutputStream());
-    //             print(me.toString());
-    //             out.writeUTF(me.toString());
-    //             this.start();
-    //         }
-    //         catch(IOException e) {
-    //             print("tcp.ClientConnection:" + e.getMessage());
-    //         }
-    //     }
-
-    //     public void run() {
-    //         Field = new Paint[10][10];
-    //         for (int i = 0; i < 10; i++) {
-    //             for (int j = 0; j < 10; j++) {
-    //                 Field[i][j] = Paint.White;
-    //             }
-    //         }
-    //         turn = Turn.BLUE;
-    //         while (!isOver()) {
-    //             String move = "";
-    //             SendTurn(turn.toString());
-    //             if (turn == me) {
-    //                 move = ReadMove();
-    //                 SendMove(move);
-    //                 nextTurn();
-    //             } else {
-    //                 while (me != turn);
-    //             }
-    //         }
-    //     }
-    //     private void SendMove(String move) {
-    //         if (client == clients[0]) {
-    //            try {
-    //             (new DataOutputStream(clients[1].getOutputStream())).writeUTF(move);
-    //             } catch (IOException e) {
-    //                 e.printStackTrace();
-    //             };
-    //         } else if (client == clients[1]) {
-    //             try {
-    //              (new DataOutputStream(clients[0].getOutputStream())).writeUTF(move);
-    //              } catch (IOException e) {
-    //                  e.printStackTrace();
-    //              };
-    //          }
-    //     }
-
-

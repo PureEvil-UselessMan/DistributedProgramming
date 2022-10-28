@@ -12,7 +12,8 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-enum Turn { BLUE, RED }
+enum Turn { BLUE, RED };
+
 
 public class Client {
     // Connection
@@ -30,6 +31,9 @@ public class Client {
     static String move;
     static MyJButton Buttons[][] = new MyJButton[10][10];
     static boolean Enabled[][] = new boolean[10][10];
+    static final Color DARKBLUE = new Color(0, 0, 153);
+    static final Color DARKRED = new Color(153, 0, 0);
+
 
     public static void main(String[] args) throws Exception {
         socket = new Socket(host, port);
@@ -49,23 +53,39 @@ public class Client {
             MyJButton btn = new MyJButton("");
             btn.setEnabled(false);
             btn.setForeground(Color.WHITE);
-            Buttons[i/10][i%10] = btn;
             btn.setCoord(i/10, i%10);
+            Buttons[i/10][i%10] = btn;
             btn.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     if (me == turn) {
                         if (count != 0) {
-                            count--;
                             info += btn.getx() + btn.gety();
-                            if (me == Turn.BLUE) {
-                                btn.setBackground(Color.BLUE);
-                                if (btn.getText().equals("")) btn.setText("Y");
-                            } else if (me == Turn.RED) {
-                                btn.setBackground(Color.RED);
-                                if (btn.getText().equals("")) btn.setText("Y");
-                            }
+                            count--;
+                            int x = Integer.parseInt(btn.getx());
+                            int y = Integer.parseInt(btn.gety());
                             SetEnabled(btn);
+                            if (me == Turn.BLUE) {
+                                if (btn.getText().equals("")) {
+                                    btn.setText("Y");
+                                    btn.setBackground(Color.BLUE);
+                                } else if (btn.getBackground() == Color.RED) {
+                                    btn.setBackground(DARKBLUE);
+                                }
+                                if (!(x == 0 && y == 9)) {
+                                    Enabled[x][y] = false;
+                                }
+                            } else if (me == Turn.RED) {
+                                if (btn.getText().equals("")) {
+                                    btn.setBackground(Color.RED);
+                                    btn.setText("Y");
+                                } else if (btn.getBackground() == Color.BLUE) {
+                                    btn.setBackground(DARKRED);
+                                }
+                                if (!(x == 9 && y == 0)) {
+                                    Enabled[x][y] = false;
+                                }
+                            }
                             CalcEnabledButtons();
                         }
                     }
@@ -75,21 +95,38 @@ public class Client {
                     int x = Integer.parseInt(btn.getx());
                     int y = Integer.parseInt(btn.gety());
                     if (x + 1 < 10)
-                        Enabled[x+1][y] = true;
+                        if (Buttons[x+1][y].getText().equals("") || Buttons[x+1][y].getBackground() == getEnemyColor())
+                            Enabled[x+1][y] = true;
                     if (x + 1 < 10 && y - 1 > -1)
-                        Enabled[x+1][y-1] = true;
+                        if (Buttons[x+1][y-1].getText().equals("") || Buttons[x+1][y-1].getBackground() == getEnemyColor())
+                            Enabled[x+1][y-1] = true;
                     if ( y - 1 > -1)
-                        Enabled[x][y-1] = true;
+                        if (Buttons[x][y-1].getText().equals("") || Buttons[x][y-1].getBackground() == getEnemyColor())
+                            Enabled[x][y-1] = true;
                     if (x - 1 > -1 && y - 1 > -1)
+                        if (Buttons[x-1][y-1].getText().equals("") || Buttons[x-1][y-1].getBackground() == getEnemyColor())
                         Enabled[x-1][y-1] = true;
                     if (x - 1 > -1)
+                        if (Buttons[x-1][y].getText().equals("") || Buttons[x-1][y].getBackground() == getEnemyColor())
                         Enabled[x-1][y] = true;
                     if (x - 1 > -1 && y + 1 < 10)
+                        if (Buttons[x-1][y+1].getText().equals("") || Buttons[x-1][y+1].getBackground() == getEnemyColor())
                         Enabled[x-1][y+1] = true;
                     if (y + 1 < 10)
+                        if (Buttons[x][y+1].getText().equals("") || Buttons[x][y+1].getBackground() == getEnemyColor())
                         Enabled[x][y+1] = true;
                     if (x + 1 < 10 && y + 1 < 10)
+                        if (Buttons[x+1][y+1].getText().equals("") || Buttons[x+1][y+1].getBackground() == getEnemyColor())
                         Enabled[x+1][y+1] = true;
+                }
+
+                private Color getEnemyColor() {
+                    if (me == Turn.BLUE) {
+                        return Color.RED;
+                    } else if (me == Turn.RED) {
+                        return Color.BLUE;
+                    }
+                    return null;
                 }
             });
             panel.add(btn);
@@ -105,8 +142,8 @@ public class Client {
             for (int j = 0; j < 10; j++)
                 Enabled[i][j] = false;
         if (me == Turn.BLUE) Enabled[0][9] = true;
-        if (me == Turn.RED) Enabled[9][0] = true;
         CalcEnabledButtons();
+        if (me == Turn.RED) Enabled[9][0] = true;
 
         while(!isOver()) {
             turn = whosTurn(in.readUTF());
@@ -128,11 +165,15 @@ public class Client {
                 info = in.readUTF();
                 print("Get info of move " + info);
                 ParseMove();
+                CalcEnabledButtons();
             }
         }
         turn = whosTurn(in.readUTF());
         print("Winner is " + turn.toString());
         frame.setTitle(turn.toString() + " has win!");
+        for (int i = 0; i < 10; i++)
+            for (int j = 0; j < 10; j++)
+                    Buttons[i][j].setEnabled(false);
     }
 
     private static void CalcEnabledButtons() {
@@ -140,6 +181,8 @@ public class Client {
             for (int j = 0; j < 10; j++) {
                 if (Enabled[i][j]) {
                     Buttons[i][j].setEnabled(true);
+                } else {
+                    Buttons[i][j].setEnabled(false);
                 }
             }
         }
@@ -161,14 +204,236 @@ public class Client {
 
     private static void ParseMove() {
         for (int i = 0; i < info.length(); i+=2) {
+            int x = Character.getNumericValue(info.charAt(i));
+            int y = Character.getNumericValue(info.charAt(i+1));
+            Color backColor = Buttons[x][y].getBackground();
+            String text = Buttons[x][y].getText();
             if (me == Turn.BLUE) {
-                Buttons[Character.getNumericValue(info.charAt(i))][Character.getNumericValue(info.charAt(i+1))].setBackground(Color.RED);
-                Buttons[Character.getNumericValue(info.charAt(i))][Character.getNumericValue(info.charAt(i+1))].setText("E");
+                if (text.equals("")) {
+                    Buttons[x][y].setBackground(Color.RED);
+                    Buttons[x][y].setText("E");
+                } else if (backColor == Color.BLUE) {
+                    Buttons[x][y].setBackground(DARKRED);
+                    SetDisabledBlue(x, y);
+                    CalcEnabledButtons();
+                }
             } else if (me == Turn.RED) {
-                Buttons[Character.getNumericValue(info.charAt(i))][Character.getNumericValue(info.charAt(i+1))].setBackground(Color.BLUE);
-                Buttons[Character.getNumericValue(info.charAt(i))][Character.getNumericValue(info.charAt(i+1))].setText("E");
+                if (text.equals("")) {
+                    Buttons[x][y].setBackground(Color.BLUE);
+                    Buttons[x][y].setText("E");
+                } else if (backColor == Color.RED) {
+                    Buttons[x][y].setBackground(DARKBLUE);
+                    SetDisabledRed(x, y);
+                    CalcEnabledButtons();
+                }
             }
         }
+    }
+
+    private static void SetDisabledBlue(int x, int y) {
+        if (x + 1 < 10) {
+            if (Buttons[x+1][y].isEnabled() == true) {
+                if (!isOptionBlue(x+1, y)) {
+                    Enabled[x+1][y] = false;
+                }
+            }
+        }
+        if (x + 1 < 10 && y - 1 > -1) {
+            if (Buttons[x+1][y-1].isEnabled() == true) {
+                if (!isOptionBlue(x+1, y-1)) {
+                    Enabled[x+1][y-1] = false;
+                }
+            }
+        }
+        if (y - 1 > -1) {
+            if (Buttons[x][y-1].isEnabled() == true) {
+                if (!isOptionBlue(x, y-1)) {
+                    Enabled[x][y-1] = false;
+                }
+            }
+        }
+        if (x - 1 > -1 && y - 1 > -1) {
+            if (Buttons[x-1][y-1].isEnabled() == true) {
+                if (!isOptionBlue(x-1, y-1)) {
+                    Enabled[x-1][y-1] = false;
+                }
+            }
+        }
+        if (x - 1 > -1) {
+            if (Buttons[x-1][y].isEnabled() == true) {
+                if (!isOptionBlue(x-1, y) && !(x-1 == 0 && y == 9)) {
+                    Enabled[x-1][y] = false;
+                }
+            }
+        }
+        if (x - 1 > -1 && y + 1 < 10) {
+            if (Buttons[x-1][y+1].isEnabled() == true) {
+                if (!isOptionBlue(x-1, y+1) && !(x-1 == 0 && y+1 == 9)) {
+                    Enabled[x-1][y+1] = false;
+                }
+            }
+        }
+        if (y + 1 < 10) {
+            if (Buttons[x][y+1].isEnabled() == true) {
+                if (!isOptionBlue(x, y+1) && !(x == 0 && y+1 == 9)) {
+                    Enabled[x][y+1] = false;
+                }
+            }
+        }
+        if (x + 1 < 10 && y + 1 < 10) {
+            if (Buttons[x+1][y+1].isEnabled() == true) {
+                if (!isOptionBlue(x+1, y+1)) {
+                    Enabled[x+1][y+1] = false;
+                }
+            }
+        }
+    }
+
+    private static boolean isOptionBlue(int x, int y) {
+        if (x + 1 < 10) {
+            if (Buttons[x+1][y].getBackground() == Color.BLUE || Buttons[x+1][y].getBackground() == DARKBLUE) {
+                return true;
+            }
+        }
+        if (x + 1 < 10 && y - 1 > -1) {
+            if (Buttons[x+1][y-1].getBackground() == Color.BLUE || Buttons[x+1][y-1].getBackground() == DARKBLUE) {
+                return true;
+            }
+        }
+        if (y - 1 > -1) {
+            if (Buttons[x][y-1].getBackground() == Color.BLUE || Buttons[x][y-1].getBackground() == DARKBLUE) {
+                return true;
+            }
+        }
+        if (x - 1 > -1 && y - 1 > -1) {
+            if (Buttons[x-1][y-1].getBackground() == Color.BLUE || Buttons[x-1][y-1].getBackground() == DARKBLUE) {
+                return true;
+            }
+        }
+        if (x - 1 > -1) {
+            if (Buttons[x-1][y].getBackground() == Color.BLUE || Buttons[x-1][y].getBackground() == DARKBLUE) {
+                return true;
+            }
+        }
+        if (x - 1 > -1 && y + 1 < 10) {
+            if (Buttons[x-1][y+1].getBackground() == Color.BLUE || Buttons[x-1][y+1].getBackground() == DARKBLUE) {
+                return true;
+            }
+        }
+        if (y + 1 < 10) {
+            if (Buttons[x][y+1].getBackground() == Color.BLUE || Buttons[x][y+1].getBackground() == DARKBLUE) {
+                return true;
+            }
+        }
+        if (x + 1 < 10 && y + 1 < 10) {
+            if (Buttons[x+1][y+1].getBackground() == Color.BLUE || Buttons[x+1][y+1].getBackground() == DARKBLUE) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void SetDisabledRed(int x, int y) {
+        if (x + 1 < 10) {
+            if (Buttons[x+1][y].isEnabled() == true) {
+                if (!isOptionRed(x+1, y)) {
+                    Enabled[x+1][y] = false;
+                }
+            }
+        }
+        if (x + 1 < 10 && y - 1 > -1) {
+            if (Buttons[x+1][y-1].isEnabled() == true) {
+                if (!isOptionRed(x+1, y-1)) {
+                    Enabled[x+1][y-1] = false;
+                }
+            }
+        }
+        if (y - 1 > -1) {
+            if (Buttons[x][y-1].isEnabled() == true) {
+                if (!isOptionRed(x, y-1)) {
+                    Enabled[x][y-1] = false;
+                }
+            }
+        }
+        if (x - 1 > -1 && y - 1 > -1) {
+            if (Buttons[x-1][y-1].isEnabled() == true) {
+                if (!isOptionRed(x-1, y-1)) {
+                    Enabled[x-1][y-1] = false;
+                }
+            }
+        }
+        if (x - 1 > -1) {
+            if (Buttons[x-1][y].isEnabled() == true) {
+                if (!isOptionRed(x-1, y) && !(x-1 == 9 && y == 0)) {
+                    Enabled[x-1][y] = false;
+                }
+            }
+        }
+        if (x - 1 > -1 && y + 1 < 10) {
+            if (Buttons[x-1][y+1].isEnabled() == true) {
+                if (!isOptionRed(x-1, y+1) && !(x-1 == 9 && y+1 == 0)) {
+                    Enabled[x-1][y+1] = false;
+                }
+            }
+        }
+        if (y + 1 < 10) {
+            if (Buttons[x][y+1].isEnabled() == true) {
+                if (!isOptionRed(x, y+1) && !(x == 9 && y+1 == 0)) {
+                    Enabled[x][y+1] = false;
+                }
+            }
+        }
+        if (x + 1 < 10 && y + 1 < 10) {
+            if (Buttons[x+1][y+1].isEnabled() == true) {
+                if (!isOptionRed(x+1, y+1)) {
+                    Enabled[x+1][y+1] = false;
+                }
+            }
+        }
+    }
+
+    private static boolean isOptionRed(int x, int y) {
+        if (x + 1 < 10) {
+            if (Buttons[x+1][y].getBackground() == Color.RED || Buttons[x+1][y].getBackground() == DARKRED) {
+                return true;
+            }
+        }
+        if (x + 1 < 10 && y - 1 > -1) {
+            if (Buttons[x+1][y-1].getBackground() == Color.RED || Buttons[x+1][y-1].getBackground() == DARKRED) {
+                return true;
+            }
+        }
+        if (y - 1 > -1) {
+            if (Buttons[x][y-1].getBackground() == Color.RED || Buttons[x][y-1].getBackground() == DARKRED) {
+                return true;
+            }
+        }
+        if (x - 1 > -1 && y - 1 > -1) {
+            if (Buttons[x-1][y-1].getBackground() == Color.RED || Buttons[x-1][y-1].getBackground() == DARKRED) {
+                return true;
+            }
+        }
+        if (x - 1 > -1) {
+            if (Buttons[x-1][y].getBackground() == Color.RED || Buttons[x-1][y].getBackground() == DARKRED) {
+                return true;
+            }
+        }
+        if (x - 1 > -1 && y + 1 < 10) {
+            if (Buttons[x-1][y+1].getBackground() == Color.RED || Buttons[x-1][y+1].getBackground() == DARKRED) {
+                return true;
+            }
+        }
+        if (y + 1 < 10) {
+            if (Buttons[x][y+1].getBackground() == Color.RED || Buttons[x][y+1].getBackground() == DARKRED) {
+                return true;
+            }
+        }
+        if (x + 1 < 10 && y + 1 < 10) {
+            if (Buttons[x+1][y+1].getBackground() == Color.RED || Buttons[x+1][y+1].getBackground() == DARKRED) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static Turn whosTurn(String readUTF) {
